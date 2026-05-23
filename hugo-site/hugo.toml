@@ -1,4 +1,4 @@
-baseURL = "/"
+baseURL = "https://repointel.thetamind.ai/"
 relativeURLs = true
 canonifyURLs = false
 languageCode = "zh-cn"
