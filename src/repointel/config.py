@@ -98,8 +98,18 @@ class Settings:
             raise ConfigurationError("REPOINTEL_MAX_CANDIDATES must be positive.")
         if self.rough_screen_limit <= 0 or self.final_publish_limit <= 0:
             raise ConfigurationError("Screening and publish limits must be positive.")
+        if self.rough_screen_limit > self.max_candidates:
+            raise ConfigurationError(
+                "REPOINTEL_ROUGH_LIMIT cannot exceed REPOINTEL_MAX_CANDIDATES."
+            )
+        if self.final_publish_limit > self.rough_screen_limit:
+            raise ConfigurationError("REPOINTEL_FINAL_LIMIT cannot exceed REPOINTEL_ROUGH_LIMIT.")
         if not (0 <= self.score_threshold <= 100):
             raise ConfigurationError("REPOINTEL_SCORE_THRESHOLD must be between 0 and 100.")
+        if self.cache_ttl_days <= 0 or self.require_recent_push_hours <= 0:
+            raise ConfigurationError("Cache TTL and recent push window must be positive.")
+        if self.min_stars < 0 or self.min_fork_star_ratio < 0:
+            raise ConfigurationError("Minimum star and fork/star thresholds cannot be negative.")
 
 
 def _blank_to_none(value: str | None) -> str | None:

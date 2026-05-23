@@ -32,6 +32,7 @@ jobs:
       - name: Lint and test
         run: |
           python -m ruff check src tests
+          python -m ruff format --check src tests
           python -m pytest
 
       - name: Run RepoIntel pipeline
@@ -73,7 +74,7 @@ jobs:
 
       - name: Generate Pagefind index
         working-directory: hugo-site
-        run: npx pagefind --site public
+        run: npx -y pagefind --site public
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

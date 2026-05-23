@@ -102,16 +102,20 @@ class AIEngine:
             "instruction": f"从候选仓库中挑出最多 {self.settings.rough_screen_limit} 个最值得深度审计的项目。",
             "repos": [repo.to_llm_context() for repo in ordered_by_signal],
         }
-        raw = self._complete(
-            LLMMessage(
-                system=ROUGH_SYSTEM_PROMPT,
-                user=json.dumps(prompt, ensure_ascii=False),
-                model=self.settings.rough_llm_model or self.settings.llm_model,
-                temperature=0.1,
-                max_tokens=3000,
+        try:
+            raw = self._complete(
+                LLMMessage(
+                    system=ROUGH_SYSTEM_PROMPT,
+                    user=json.dumps(prompt, ensure_ascii=False),
+                    model=self.settings.rough_llm_model or self.settings.llm_model,
+                    temperature=0.1,
+                    max_tokens=3000,
+                )
             )
-        )
-        payload = _extract_json(raw)
+            payload = _extract_json(raw)
+        except LLMResponseError as exc:
+            LOGGER.error("LLM rough screen failed: %s; falling back to metric ordering", exc)
+            return ordered_by_signal[: self.settings.rough_screen_limit]
         selected = payload.get("selected")
         if not isinstance(selected, list):
             raise LLMResponseError("Rough screen response must contain selected list.")
@@ -178,16 +182,19 @@ class AIEngine:
             if self.settings.llm_base_url:
                 kwargs["base_url"] = self.settings.llm_base_url
             self._openai_client = OpenAI(**kwargs)
-        response = self._openai_client.chat.completions.create(
-            model=message.model,
-            messages=[
-                {"role": "system", "content": message.system},
-                {"role": "user", "content": message.user},
-            ],
-            temperature=message.temperature,
-            max_tokens=message.max_tokens,
-            response_format={"type": "json_object"},
-        )
+        try:
+            response = self._openai_client.chat.completions.create(
+                model=message.model,
+                messages=[
+                    {"role": "system", "content": message.system},
+                    {"role": "user", "content": message.user},
+                ],
+                temperature=message.temperature,
+                max_tokens=message.max_tokens,
+                response_format={"type": "json_object"},
+            )
+        except Exception as exc:
+            raise LLMResponseError(f"OpenAI-compatible request failed: {exc}") from exc
         content = response.choices[0].message.content
         if not content:
             raise LLMResponseError("OpenAI-compatible model returned empty content.")
@@ -205,13 +212,16 @@ class AIEngine:
             if self.settings.llm_base_url:
                 kwargs["base_url"] = self.settings.llm_base_url
             self._claude_client = Anthropic(**kwargs)
-        response = self._claude_client.messages.create(
-            model=message.model,
-            system=message.system,
-            messages=[{"role": "user", "content": message.user}],
-            temperature=message.temperature,
-            max_tokens=message.max_tokens,
-        )
+        try:
+            response = self._claude_client.messages.create(
+                model=message.model,
+                system=message.system,
+                messages=[{"role": "user", "content": message.user}],
+                temperature=message.temperature,
+                max_tokens=message.max_tokens,
+            )
+        except Exception as exc:
+            raise LLMResponseError(f"Claude request failed: {exc}") from exc
         chunks: list[str] = []
         for block in response.content:
             text = getattr(block, "text", None)

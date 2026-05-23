@@ -94,7 +94,11 @@ class GitHubClient:
         payload = self._request_json(
             "GET", f"https://api.github.com/repos/{repo.full_name}/languages"
         )
-        return {str(k): int(v) for k, v in payload.items() if isinstance(v, int | float)}
+        return {
+            str(k): int(v)
+            for k, v in payload.items()
+            if isinstance(v, int | float) and not isinstance(v, bool)
+        }
 
     def fetch_readme_excerpt(self, repo: RepoCandidate, limit: int = 8000) -> str:
         try:

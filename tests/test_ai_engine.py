@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from repointel.ai_engine import _audit_from_payload, _extract_json
+from repointel.ai_engine import AIEngine, _audit_from_payload, _extract_json
+from repointel.config import Settings
+from repointel.exceptions import LLMResponseError
 from repointel.models import RepoCandidate
 
 
@@ -19,11 +21,12 @@ def test_extract_json_handles_nested_objects() -> None:
     assert payload["meta"]["count"] == 1
 
 
-def test_audit_total_score_is_recomputed_locally() -> None:
-    repo = RepoCandidate.from_github_api(
+def _repo_candidate(name: str = "owner/repo") -> RepoCandidate:
+    owner, repo = name.split("/", 1)
+    return RepoCandidate.from_github_api(
         {
-            "full_name": "owner/repo",
-            "html_url": "https://github.com/owner/repo",
+            "full_name": name,
+            "html_url": f"https://github.com/{name}",
             "description": "Useful infra tool",
             "stargazers_count": 1000,
             "forks_count": 50,
@@ -36,10 +39,14 @@ def test_audit_total_score_is_recomputed_locally() -> None:
             "default_branch": "main",
             "archived": False,
             "disabled": False,
-            "owner": {"login": "owner"},
-            "name": "repo",
+            "owner": {"login": owner},
+            "name": repo,
         }
     )
+
+
+def test_audit_total_score_is_recomputed_locally() -> None:
+    repo = _repo_candidate()
     audit = _audit_from_payload(
         repo,
         {
@@ -61,3 +68,18 @@ def test_audit_total_score_is_recomputed_locally() -> None:
         },
     )
     assert audit.total_score == 77.5
+
+
+def test_rough_screen_falls_back_to_metric_ordering(monkeypatch) -> None:
+    monkeypatch.setenv("REPOINTEL_STATE_BACKEND", "local")
+    monkeypatch.setenv("LLM_MODEL", "test-model")
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+    settings = Settings.from_env()
+
+    class FailingAIEngine(AIEngine):
+        def _complete(self, _message):  # type: ignore[no-untyped-def]
+            raise LLMResponseError("model unavailable")
+
+    repos = [_repo_candidate("owner/a"), _repo_candidate("owner/b")]
+    selected = FailingAIEngine(settings).rough_screen(repos)
+    assert [repo.full_name for repo in selected] == ["owner/a", "owner/b"]

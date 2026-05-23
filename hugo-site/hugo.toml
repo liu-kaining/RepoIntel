@@ -1,4 +1,6 @@
-baseURL = "https://example.com/"
+baseURL = "/"
+relativeURLs = true
+canonifyURLs = false
 languageCode = "zh-cn"
 title = "RepoIntel 开源情报局"
 enableRobotsTXT = true

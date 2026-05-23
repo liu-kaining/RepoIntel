@@ -19,3 +19,11 @@ def test_settings_rejects_invalid_provider(monkeypatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "bad")
     with pytest.raises(ConfigurationError):
         Settings.from_env()
+
+
+def test_settings_rejects_incoherent_limits(monkeypatch) -> None:
+    monkeypatch.setenv("REPOINTEL_DRY_RUN", "true")
+    monkeypatch.setenv("REPOINTEL_MAX_CANDIDATES", "5")
+    monkeypatch.setenv("REPOINTEL_ROUGH_LIMIT", "10")
+    with pytest.raises(ConfigurationError):
+        Settings.from_env()
