@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 
 from .exceptions import ConfigurationError
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -69,6 +72,7 @@ class Settings:
             dry_run=dry_run,
         )
         settings.validate()
+        settings.log_safe_summary()
         return settings
 
     def validate(self) -> None:
@@ -110,6 +114,38 @@ class Settings:
             raise ConfigurationError("Cache TTL and recent push window must be positive.")
         if self.min_stars < 0 or self.min_fork_star_ratio < 0:
             raise ConfigurationError("Minimum star and fork/star thresholds cannot be negative.")
+
+    def log_safe_summary(self) -> None:
+        def _mask(value: str | None) -> str:
+            if not value:
+                return "<empty>"
+            if len(value) <= 6:
+                return "***"
+            return f"{value[:4]}...{value[-4:]}"
+
+        LOGGER.info(
+            "RepoIntel config loaded: dry_run=%s, provider=%s, model=%s, rough_model=%s, "
+            "github_token=%s, state_backend=%s, r2_endpoint=%s, r2_bucket=%s, r2_key=%s, "
+            "max_candidates=%d, rough_limit=%d, final_limit=%d, score_threshold=%s, "
+            "min_stars=%d, min_fork_star_ratio=%s, recent_push_hours=%d, cache_ttl_days=%d",
+            self.dry_run,
+            self.llm_provider,
+            self.llm_model or "<empty>",
+            self.rough_llm_model or "<same-as-deep-model>",
+            _mask(self.github_token),
+            self.state_backend,
+            self.r2_endpoint_url or "<empty>",
+            self.r2_bucket_name or "<empty>",
+            self.r2_cache_key,
+            self.max_candidates,
+            self.rough_screen_limit,
+            self.final_publish_limit,
+            self.score_threshold,
+            self.min_stars,
+            self.min_fork_star_ratio,
+            self.require_recent_push_hours,
+            self.cache_ttl_days,
+        )
 
 
 def _blank_to_none(value: str | None) -> str | None:

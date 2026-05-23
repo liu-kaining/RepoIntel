@@ -24,11 +24,18 @@ class RepoIntelPipeline:
 
     def run(self) -> int:
         now = datetime.now(UTC)
+        LOGGER.info(
+            "RepoIntel pipeline starting with state_backend=%s", self.settings.state_backend
+        )
         state = self.state_store.load()
         LOGGER.info("Loaded %d processed repo records", len(state))
 
         candidates = self.github.discover_candidates()
-        enriched = self.github.enrich_candidates(candidates)
+        quick_eligible = HardMetricFilter(self.settings, state).accepted(candidates)
+        LOGGER.info(
+            "Quick metric filter accepted %d/%d candidates", len(quick_eligible), len(candidates)
+        )
+        enriched = self.github.enrich_candidates(quick_eligible, limit=60)
         eligible = HardMetricFilter(self.settings, state).accepted(enriched)
         LOGGER.info("Hard metric filter accepted %d/%d repos", len(eligible), len(enriched))
 
@@ -44,6 +51,12 @@ class RepoIntelPipeline:
             now=now,
             ttl_days=self.settings.cache_ttl_days,
         )
+        LOGGER.info(
+            "Prepared %d processed repo records for persistence (from %d audits, %d old records)",
+            len(updated_state),
+            len(audits),
+            len(state),
+        )
         self.state_store.save(updated_state)
         LOGGER.info("Saved %d processed repo records", len(updated_state))
         return 0
@@ -55,6 +68,6 @@ def main() -> None:
         settings = Settings.from_env()
         exit_code = RepoIntelPipeline(settings).run()
     except RepoIntelError as exc:
-        LOGGER.error("RepoIntel failed: %s", exc)
+        LOGGER.error("RepoIntel failed: %s", exc, exc_info=True)
         raise SystemExit(1) from exc
     raise SystemExit(exit_code)

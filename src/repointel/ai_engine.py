@@ -98,6 +98,15 @@ class AIEngine:
         if self.settings.dry_run:
             return ordered_by_signal[: self.settings.rough_screen_limit]
 
+        LOGGER.info(
+            "Rough screen submitting %d candidates to model %s",
+            len(ordered_by_signal),
+            self.settings.rough_llm_model or self.settings.llm_model,
+        )
+        LOGGER.debug(
+            "Top rough candidates by signal: %s",
+            [repo.full_name for repo in ordered_by_signal[:8]],
+        )
         prompt = {
             "instruction": f"从候选仓库中挑出最多 {self.settings.rough_screen_limit} 个最值得深度审计的项目。",
             "repos": [repo.to_llm_context() for repo in ordered_by_signal],
@@ -132,6 +141,15 @@ class AIEngine:
         if self.settings.dry_run:
             return _heuristic_audit(repo)
 
+        LOGGER.info("Deep auditing %s with model %s", repo.full_name, self.settings.llm_model)
+        LOGGER.debug(
+            "Deep audit context for %s: stars=%d, forks=%d, language=%s, topics=%s",
+            repo.full_name,
+            repo.stargazers_count,
+            repo.forks_count,
+            repo.primary_language,
+            repo.topics[:8],
+        )
         prompt = {
             "repo": repo.to_llm_context(),
             "local_scoring_formula": "total_score = 0.30*innovation + 0.30*utility + 0.25*engineering + 0.15*health; final total is recomputed by RepoIntel, do not optimize for vanity.",
@@ -147,7 +165,9 @@ class AIEngine:
             )
         )
         payload = _extract_json(raw)
-        return _audit_from_payload(repo, payload)
+        audit = _audit_from_payload(repo, payload)
+        LOGGER.info("Deep audit completed for %s -> score=%s", repo.full_name, audit.total_score)
+        return audit
 
     def _complete(self, message: LLMMessage) -> str:
         last_error: LLMResponseError | None = None
@@ -168,6 +188,7 @@ class AIEngine:
                     )
                     time.sleep(delay)
         assert last_error is not None
+        LOGGER.error("LLM request failed after retries: %s", last_error)
         raise last_error
 
     def _complete_openai(self, message: LLMMessage) -> str:

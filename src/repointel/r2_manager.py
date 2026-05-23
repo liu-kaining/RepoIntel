@@ -59,6 +59,12 @@ class R2StateStore(StateStore):
         self._client_error = ClientError
         self.bucket = settings.r2_bucket_name
         self.key = settings.r2_cache_key
+        LOGGER.info(
+            "Initializing R2 state store: bucket=%s, key=%s, endpoint=%s",
+            self.bucket,
+            self.key,
+            settings.r2_endpoint_url,
+        )
         self.client = boto3.client(
             "s3",
             endpoint_url=settings.r2_endpoint_url,
@@ -68,6 +74,7 @@ class R2StateStore(StateStore):
         )
 
     def load(self) -> ProcessedState:
+        LOGGER.debug("Loading R2 state from bucket=%s key=%s", self.bucket, self.key)
         try:
             response = self.client.get_object(Bucket=self.bucket, Key=self.key)
             body = response["Body"].read().decode("utf-8")
@@ -82,6 +89,9 @@ class R2StateStore(StateStore):
             raise ExternalServiceError("Failed to load R2 state.") from exc
 
     def save(self, state: ProcessedState) -> None:
+        LOGGER.debug(
+            "Preparing to save %d records to R2 bucket=%s key=%s", len(state), self.bucket, self.key
+        )
         body = json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8")
         try:
             self.client.put_object(
@@ -91,7 +101,7 @@ class R2StateStore(StateStore):
                 ContentType="application/json; charset=utf-8",
             )
         except (self._client_error, self._boto_core_error) as exc:
-            raise ExternalServiceError("Failed to save R2 state.") from exc
+            raise ExternalServiceError(f"Failed to save R2 state: {exc}") from exc
 
 
 def build_state_store(settings: Settings) -> StateStore:

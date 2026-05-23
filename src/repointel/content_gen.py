@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -9,6 +10,8 @@ import yaml
 from .config import Settings
 from .models import RepoAudit
 
+LOGGER = logging.getLogger(__name__)
+
 
 class ContentGenerator:
     def __init__(self, settings: Settings) -> None:
@@ -17,11 +20,18 @@ class ContentGenerator:
     def publish(self, audits: list[RepoAudit], *, now: datetime | None = None) -> list[RepoAudit]:
         now = now or datetime.now(UTC)
         publishable = self.select_publishable(audits)
+        LOGGER.info(
+            "Content generation selected %d publishable entries from %d audits",
+            len(publishable),
+            len(audits),
+        )
         self.settings.hugo_content_dir.mkdir(parents=True, exist_ok=True)
         self.settings.output_dir.mkdir(parents=True, exist_ok=True)
         for audit in publishable:
-            self.write_hugo_post(audit, now)
-        self.write_wechat_digest(publishable, now)
+            post_path = self.write_hugo_post(audit, now)
+            LOGGER.info("Wrote Hugo post %s -> score=%s", post_path.name, audit.total_score)
+        digest_path = self.write_wechat_digest(publishable, now)
+        LOGGER.info("Wrote WeChat digest -> %s with %d entries", digest_path, len(publishable))
         return publishable
 
     def select_publishable(self, audits: list[RepoAudit]) -> list[RepoAudit]:

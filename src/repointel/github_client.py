@@ -52,6 +52,11 @@ class GitHubClient:
                 "GET", "https://api.github.com/search/repositories", params=params
             )
             items = payload.get("items", [])
+            LOGGER.debug(
+                "GitHub search page=%d returned=%d",
+                page,
+                len(items) if isinstance(items, list) else -1,
+            )
             if not isinstance(items, list):
                 raise ExternalServiceError("GitHub Search API returned an invalid items payload.")
             if not items:
@@ -63,12 +68,18 @@ class GitHubClient:
         LOGGER.info("Discovered %d GitHub candidates", len(repos))
         return repos[: self.settings.max_candidates]
 
-    def enrich_candidates(self, repos: list[RepoCandidate]) -> list[RepoCandidate]:
+    def enrich_candidates(
+        self, repos: list[RepoCandidate], limit: int | None = None
+    ) -> list[RepoCandidate]:
         if self.settings.dry_run:
             return repos
+        work = repos
+        if limit is not None:
+            work = repos[:limit]
+        LOGGER.info("Starting repository enrichment for %d candidates (limit=%s)", len(work), limit)
         enriched: list[RepoCandidate] = []
         since = cutoff_datetime(self.settings.require_recent_push_hours)
-        for repo in repos:
+        for repo in work:
             languages: dict[str, int] | None = None
             readme = ""
             commit_count: int | None = None
@@ -77,6 +88,13 @@ class GitHubClient:
                 languages = self.fetch_languages(repo)
                 readme = self.fetch_readme_excerpt(repo)
                 commit_count = self.fetch_recent_commit_count(repo, since)
+                LOGGER.debug(
+                    "Enriched %s: languages=%d, readme_len=%d, commit_count=%s",
+                    repo.full_name,
+                    len(languages),
+                    len(readme),
+                    commit_count,
+                )
             except ExternalServiceError as exc:
                 enrichment_failed = True
                 LOGGER.warning("Failed to enrich %s: %s", repo.full_name, exc)
@@ -107,16 +125,22 @@ class GitHubClient:
             )
         except ExternalServiceError:
             return ""
-        if payload.get("encoding") != "base64" or not payload.get("content"):
-            return ""
-        try:
-            # Cap base64 input before decode to avoid loading multi-MB README blobs.
-            max_b64_chars = (limit * 4 // 3) + 8
-            content_b64 = str(payload["content"]).replace("\n", "")[:max_b64_chars]
-            decoded = base64.b64decode(content_b64, validate=False)
-            return decoded.decode("utf-8", errors="replace")[:limit]
-        except (ValueError, TypeError) as exc:
-            raise ExternalServiceError(f"Failed to decode README for {repo.full_name}") from exc
+        if payload.get("encoding") == "base64" and payload.get("content"):
+            try:
+                max_b64_chars = (limit * 4 // 3) + 8
+                content_b64 = str(payload["content"]).replace("\n", "")
+                # Pad base64 so truncated content still decodes safely.
+                content_b64 = content_b64[:max_b64_chars]
+                padding = 4 - len(content_b64) % 4 if len(content_b64) % 4 else 0
+                content_b64 = content_b64 + ("=" * padding)
+                decoded = base64.b64decode(content_b64, validate=False)
+                return decoded.decode("utf-8", errors="replace")[:limit]
+            except (ValueError, TypeError):
+                return ""
+        text = payload.get("content")
+        if isinstance(text, str) and text:
+            return text[:limit]
+        return ""
 
     def fetch_recent_commit_count(self, repo: RepoCandidate, since: datetime) -> int:
         params = {"since": since.isoformat().replace("+00:00", "Z"), "per_page": 30}
@@ -209,8 +233,21 @@ class HardMetricFilter:
         decisions = self.apply(repos)
         for decision in decisions:
             if not decision.accepted:
-                LOGGER.info("Filtered %s: %s", decision.repo.full_name, decision.reason)
-        return [decision.repo for decision in decisions if decision.accepted]
+                LOGGER.debug("Filtered %s: %s", decision.repo.full_name, decision.reason)
+        accepted = [decision.repo for decision in decisions if decision.accepted]
+        if len(accepted) < len(repos):
+            reason_counts: dict[str, int] = {}
+            for decision in decisions:
+                if not decision.accepted:
+                    reason_counts[decision.reason] = reason_counts.get(decision.reason, 0) + 1
+            top_reasons = ", ".join(f"{reason}={count}" for reason, count in reason_counts.items())
+            LOGGER.info(
+                "Hard metric filter summary: accepted %d/%d repos; top reasons: %s",
+                len(accepted),
+                len(repos),
+                top_reasons,
+            )
+        return accepted
 
     def _decide(self, repo: RepoCandidate) -> FilterDecision:
         if repo.full_name in self._recent_processed:
