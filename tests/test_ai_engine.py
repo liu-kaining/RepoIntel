@@ -60,7 +60,7 @@ def test_audit_total_score_is_recomputed_locally() -> None:
         files=(
             SourceFile(
                 path="src/main.rs",
-                content="fn main() { println!(\"ok\"); }",
+                content='fn main() { println!("ok"); }',
                 size_bytes=32,
                 category="source",
                 truncated=False,

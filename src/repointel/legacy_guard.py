@@ -125,7 +125,9 @@ def readme_grounding_issues(repo: RepoCandidate, text: str) -> list[str]:
     readme_lower = readme.lower()
     text_lower = text.lower()
 
-    leak_hits = [term for term in FAMOUS_STACK_BUZZWORDS if term in text_lower and term not in readme_lower]
+    leak_hits = [
+        term for term in FAMOUS_STACK_BUZZWORDS if term in text_lower and term not in readme_lower
+    ]
     if leak_hits:
         issues.append(f"审计疑似套用知名项目先验而非 README: {', '.join(leak_hits[:4])}")
 

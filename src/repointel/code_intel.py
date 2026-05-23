@@ -42,8 +42,12 @@ class CodeIntelGatherer:
                 return bundle
             except Exception as exc:
                 if mode == "git":
-                    raise ExternalServiceError(f"Git code gather failed for {repo.full_name}: {exc}") from exc
-                LOGGER.warning("Git gather failed for %s, falling back to API: %s", repo.full_name, exc)
+                    raise ExternalServiceError(
+                        f"Git code gather failed for {repo.full_name}: {exc}"
+                    ) from exc
+                LOGGER.warning(
+                    "Git gather failed for %s, falling back to API: %s", repo.full_name, exc
+                )
 
         bundle = self._gather_via_api(repo)
         LOGGER.info(
@@ -185,7 +189,7 @@ class CodeIntelGatherer:
         return self.github.fetch_repository_tree_entries(repo)
 
     def _dry_run_bundle(self, repo: RepoCandidate) -> RepoCodeBundle:
-        sample_code = '''pub mod agent;
+        sample_code = """pub mod agent;
 
 pub struct AgentRuntime {
     sandbox: Sandbox,
@@ -200,7 +204,7 @@ impl AgentRuntime {
         handler.invoke(call)
     }
 }
-'''
+"""
         files = (
             SourceFile(
                 path="src/agent/runtime.rs",

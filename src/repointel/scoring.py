@@ -93,7 +93,9 @@ def review_quality_issues(
         issues.append("technical_review 过短，审计深度不足")
     if len(summary.strip()) > 60:
         issues.append("summary 过长，可能含废话")
-    hype_hits = [phrase for phrase in HYPE_PHRASES if phrase.lower() in review.lower() or phrase in review]
+    hype_hits = [
+        phrase for phrase in HYPE_PHRASES if phrase.lower() in review.lower() or phrase in review
+    ]
     if hype_hits and len(review) < 220:
         issues.append(f"审计文案含营销用语且缺乏展开: {', '.join(hype_hits[:3])}")
     if len(repo.readme_excerpt.strip()) < 200 and "信息不足" not in review:

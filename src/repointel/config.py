@@ -139,7 +139,9 @@ class Settings:
         if self.max_code_files <= 0 or self.min_code_files_for_audit <= 0:
             raise ConfigurationError("Code file limits must be positive.")
         if self.min_code_files_for_audit > self.max_code_files:
-            raise ConfigurationError("REPOINTEL_MIN_CODE_FILES cannot exceed REPOINTEL_MAX_CODE_FILES.")
+            raise ConfigurationError(
+                "REPOINTEL_MIN_CODE_FILES cannot exceed REPOINTEL_MAX_CODE_FILES."
+            )
         if self.max_file_bytes <= 0 or self.max_total_code_chars <= 0:
             raise ConfigurationError("Code size budgets must be positive.")
 

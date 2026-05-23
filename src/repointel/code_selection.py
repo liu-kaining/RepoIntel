@@ -251,7 +251,11 @@ def _score_path(path: str) -> tuple[int, str]:
         return max(70, 88 - depth * 4), "source"
     if _is_source_file(path):
         return 60, "source"
-    if lower.endswith(".md") and name.lower() in {"architecture.md", "design.md", "contributing.md"}:
+    if lower.endswith(".md") and name.lower() in {
+        "architecture.md",
+        "design.md",
+        "contributing.md",
+    }:
         return 55, "docs"
     return 0, "skip"
 

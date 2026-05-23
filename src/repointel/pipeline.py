@@ -39,7 +39,10 @@ class RepoIntelPipeline:
         eligible = HardMetricFilter(self.settings, state).accepted(enriched)
         LOGGER.info("Hard metric filter accepted %d/%d repos", len(eligible), len(enriched))
 
-        LOGGER.info("Layer 3 will shallow-clone and read source for up to %d finalists", self.settings.rough_screen_limit)
+        LOGGER.info(
+            "Layer 3 will shallow-clone and read source for up to %d finalists",
+            self.settings.rough_screen_limit,
+        )
         audits = self.ai.analyze_repos(eligible)
         published = self.content.publish(audits, now=now)
         LOGGER.info("Published %d RepoIntel entries", len(published))
