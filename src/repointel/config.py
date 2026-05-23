@@ -40,7 +40,7 @@ class Settings:
         root = Path(os.getenv("REPOINTEL_ROOT", ".")).resolve()
         settings = cls(
             github_token=_blank_to_none(os.getenv("GITHUB_TOKEN")),
-            llm_provider=os.getenv("LLM_PROVIDER", "openai").strip().lower(),
+            llm_provider=_default_if_blank(os.getenv("LLM_PROVIDER"), "openai").strip().lower(),
             llm_base_url=_blank_to_none(os.getenv("LLM_BASE_URL")),
             llm_model=os.getenv("LLM_MODEL", "").strip(),
             llm_api_key=_blank_to_none(os.getenv("LLM_API_KEY")),
@@ -117,6 +117,13 @@ def _blank_to_none(value: str | None) -> str | None:
         return None
     stripped = value.strip()
     return stripped or None
+
+
+def _default_if_blank(value: str | None, default: str) -> str:
+    if value is None:
+        return default
+    stripped = value.strip()
+    return stripped or default
 
 
 def _env_int(name: str, default: int) -> int:
