@@ -1,21 +1,31 @@
 {{ define "main" }}
   {{ $score := .Params.intel_score }}
-  <article>
+  {{ $repoTitle := with .Params.repo_name }}{{ . }}{{ else }}{{ .Title }}{{ end }}
+  <article class="intel-article" data-pagefind-body>
     <section class="article-hero">
       <div class="article-hero__top">
         <div>
-          <h1>{{ with .Params.repo_name }}{{ . }}{{ else }}{{ .Title }}{{ end }}</h1>
+          <h1 data-pagefind-meta="title">{{ $repoTitle }}</h1>
+          <p data-pagefind-meta="summary" class="visually-hidden">{{ .Params.summary }}</p>
           <div class="meta-row" style="margin-top:12px;">
-            <span>{{ .Date.Format "2006-01-02 15:04" }}</span>
-            {{ with index .Params.categories 0 }}<span>{{ . }}</span>{{ end }}
+            <span data-pagefind-sort="date:{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02 15:04" }}</span>
+            {{ with index .Params.categories 0 }}<span class="meta-pill">{{ . }}</span>{{ end }}
           </div>
         </div>
         <div class="big-score">{{ $score }}</div>
       </div>
-      <p class="summary" style="margin-top:16px;font-size:1.05rem;">{{ .Params.summary }}</p>
+      <p class="hero-summary">{{ .Params.summary }}</p>
+      {{ with .Params.code_files_reviewed }}
+        <div class="hero-scope">
+          <span class="hero-scope__label">读码</span>
+          <span class="hero-scope__stat">{{ len . }} 文件</span>
+          {{ with $.Params.code_source }}<span class="hero-scope__stat">{{ . }}</span>{{ end }}
+          {{ with $.Params.code_chars_analyzed }}<span class="hero-scope__stat">≈ {{ . }} 字符</span>{{ end }}
+        </div>
+      {{ end }}
       <div class="article-actions">
         <a class="btn btn--primary" href="{{ .Params.repo_link }}" target="_blank" rel="noopener">查看 GitHub 仓库 →</a>
-        <a class="btn" href="{{ .Site.Params.github_url }}" target="_blank" rel="noopener">RepoIntel 源码</a>
+        <a class="btn" href="{{ .Site.BaseURL }}">返回风向标</a>
       </div>
       {{ with .Params.tags }}
         <div class="tag-row" style="margin-top:16px;">
@@ -24,8 +34,19 @@
       {{ end }}
     </section>
 
-    <div class="article-body">
-      {{ .Content }}
+    <div class="article-layout">
+      <nav class="article-toc" aria-label="章节导航">
+        <p class="article-toc__title">本页目录</p>
+        <a href="#scope">审读范围</a>
+        <a href="#pain">工程痛点</a>
+        <a href="#audit">技术审计</a>
+        <a href="#risk">风险雷点</a>
+        <a href="#value">商业价值</a>
+        <a href="#scores">四维评分</a>
+      </nav>
+      <div class="article-body">
+        {{ .Content }}
+      </div>
     </div>
   </article>
 {{ end }}

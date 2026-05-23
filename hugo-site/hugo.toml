@@ -6,6 +6,9 @@ title = "RepoIntel 开源情报局"
 enableRobotsTXT = true
 summaryLength = 120
 
+[markup.goldmark.renderer]
+unsafe = true
+
 [outputs]
 home = ["HTML", "RSS"]
 section = ["HTML", "RSS"]
@@ -17,5 +20,9 @@ tag = "tags"
 category = "categories"
 
 [params]
-description = "基于 AI 与硬核指标审计的开源米其林指南"
+description = "近 30 天新秀开源的源码级 CTO 审计日报 · 宁缺毋滥"
+tagline = "只审新仓库，只凭读码说话"
+hero_title = "每日开源风向标"
+hero_lead = "每天只关心一件事：近 30 天里，哪些新仓库值得工程师花时间看。"
+hero_body = "先用 Star/Fork、活跃度、仓库年龄做硬筛，再浅克隆读入真实源码，由 CTO 视角写出带路径引用的审计报告。上榜必须过 75 分线；读不到足够源码、写不出证据的，一律不发。拒绝十年老项目的怀旧复播，拒绝 README 复读机。"
 github_url = "https://github.com/liu-kaining/RepoIntel"

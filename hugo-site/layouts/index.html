@@ -1,11 +1,13 @@
 {{ define "main" }}
+  <div data-pagefind-ignore>
   <section class="hero">
-    <h2>每日开源风向标</h2>
-    <p>只收录近 30 天内新起、Star 破百/破三百、经过 AI 硬核审计的高净值项目。拒绝 linux/kubernetes 式的怀旧榜单，只看最新风向。</p>
+    <h2>{{ .Site.Params.hero_title }}</h2>
+    <p class="hero-lead">{{ .Site.Params.hero_lead }}</p>
+    <p>{{ .Site.Params.hero_body }}</p>
     <div class="hero-badges">
-      <span class="hero-badge hero-badge--live">Fresh · 30d</span>
-      <span class="hero-badge">AI Audit</span>
-      <span class="hero-badge">Hard Metrics</span>
+      <span class="hero-badge hero-badge--live">新建 ≤30 天</span>
+      <span class="hero-badge">浅克隆读码</span>
+      <span class="hero-badge">≥75 分才发</span>
     </div>
   </section>
 
@@ -35,5 +37,6 @@
     {{ else }}
       <div class="empty-state">暂无情报。Pipeline 运行后会自动生成最新项目审计。</div>
     {{ end }}
+  </div>
   </div>
 {{ end }}

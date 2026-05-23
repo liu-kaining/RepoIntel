@@ -1,6 +1,6 @@
 # RepoIntel（开源情报局）
 
-基于 AI 与硬核指标审计的「开源米其林指南」——宁缺毋滥，去伪存真，用挑剔的品味对抗信息污染。
+**近 30 天新秀开源的源码级 CTO 审计日报** —— 只审新仓库，只凭读码说话；宁缺毋滥，去伪存真。
 
 > 完整产品需求见 [`spec/INFO.md`](spec/INFO.md) · CTO 审查报告见 [`spec/CTO_REVIEW.md`](spec/CTO_REVIEW.md)
 
