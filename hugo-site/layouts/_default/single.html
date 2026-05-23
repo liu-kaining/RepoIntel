@@ -1,6 +1,6 @@
 {{ define "main" }}
   {{ $score := .Params.intel_score }}
-  {{ $repoTitle := with .Params.repo_name }}{{ . }}{{ else }}{{ .Title }}{{ end }}
+  {{ $repoTitle := .Params.repo_name | default .Title }}
   <article class="intel-article" data-pagefind-body>
     <section class="article-hero">
       <div class="article-hero__top">

@@ -1,7 +1,11 @@
 baseURL = "https://repointel.thetamind.ai/"
 relativeURLs = true
 canonifyURLs = false
-languageCode = "zh-cn"
+defaultContentLanguage = "zh-cn"
+
+[languages.zh-cn]
+locale = "zh-cn"
+languageName = "简体中文"
 title = "RepoIntel 开源情报局"
 enableRobotsTXT = true
 summaryLength = 120
