@@ -74,7 +74,24 @@ jobs:
 
       - name: Generate Pagefind index
         working-directory: hugo-site
-        run: npx -y pagefind --site public
+        run: |
+          post_count="$(find content/posts -maxdepth 1 -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
+          if [ "$post_count" -eq 0 ]; then
+            echo "No Hugo posts found; adding Pagefind stub page."
+            mkdir -p public/pagefind-stub
+            cat > public/pagefind-stub/index.html <<'EOF'
+          <!doctype html>
+          <html lang="zh-CN">
+          <body>
+          <main data-pagefind-body>
+            <h1 data-pagefind-meta="title">RepoIntel</h1>
+            <p>今日暂无通过审计的开源情报。下次 Pipeline 运行后会自动更新。</p>
+          </main>
+          </body>
+          </html>
+          EOF
+          fi
+          npx -y pagefind --site public
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
