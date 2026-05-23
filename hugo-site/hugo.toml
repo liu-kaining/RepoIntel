@@ -18,3 +18,4 @@ category = "categories"
 
 [params]
 description = "基于 AI 与硬核指标审计的开源米其林指南"
+github_url = "https://github.com/liu-kaining/RepoIntel"

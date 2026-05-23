@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 
 from .config import Settings
+from .legacy_guard import is_blocked_repo_name
 from .models import RepoAudit
 
 LOGGER = logging.getLogger(__name__)
@@ -35,11 +36,17 @@ class ContentGenerator:
         return publishable
 
     def select_publishable(self, audits: list[RepoAudit]) -> list[RepoAudit]:
-        return [
-            audit
-            for audit in sorted(audits, key=lambda item: item.total_score, reverse=True)
-            if audit.total_score >= self.settings.score_threshold
-        ][: self.settings.final_publish_limit]
+        publishable: list[RepoAudit] = []
+        for audit in sorted(audits, key=lambda item: item.total_score, reverse=True):
+            if is_blocked_repo_name(audit.repo_name):
+                LOGGER.warning("Skipping blocklisted repo %s", audit.repo_name)
+                continue
+            if audit.total_score < self.settings.score_threshold:
+                continue
+            publishable.append(audit)
+            if len(publishable) >= self.settings.final_publish_limit:
+                break
+        return publishable
 
     def write_hugo_post(self, audit: RepoAudit, published_at: datetime) -> Path:
         slug = _slugify(audit.repo_name)
@@ -55,39 +62,82 @@ class ContentGenerator:
 {front_matter}
 ---
 
+<div class="content-panel">
+
+## 审读源码范围
+
+- 代码来源：**{audit.code_source or "unknown"}**
+- 审读文件数：**{len(audit.code_files_reviewed)}**（约 {audit.code_chars_analyzed} 字符）
+- 主要路径：{", ".join(audit.code_files_reviewed[:12])}{" …" if len(audit.code_files_reviewed) > 12 else ""}
+
 ## 一句话情报
 
 {audit.summary}
+
+</div>
+
+<div class="content-panel">
 
 ## 解决的工程痛点
 
 {audit.pain_point}
 
+</div>
+
+<div class="content-panel">
+
 ## CTO 级技术审计
 
 {audit.technical_review}
+
+</div>
+
+<div class="content-panel">
 
 ## 隐藏风险与雷点
 
 {_bullet_list(audit.hidden_risks)}
 
+</div>
+
+<div class="content-panel">
+
 ## 生态与商业价值
 
 {audit.commercial_value}
 
+</div>
+
+<div class="content-panel">
+
 ## 四维评分
 
-| 维度 | 分数 |
-| --- | ---: |
-| 创新度 | {audit.scores.innovation} |
-| 实用性 | {audit.scores.utility} |
-| 工程质量 | {audit.scores.engineering} |
-| 社区健康度 | {audit.scores.health} |
-| **RepoIntel 总分** | **{audit.total_score}** |
+<div class="score-grid">
+  <div class="score-item">
+    <div class="score-item__label">创新度</div>
+    <div class="score-item__value">{audit.scores.innovation}</div>
+    <div class="score-bar"><span style="width:{audit.scores.innovation}%"></span></div>
+  </div>
+  <div class="score-item">
+    <div class="score-item__label">实用性</div>
+    <div class="score-item__value">{audit.scores.utility}</div>
+    <div class="score-bar"><span style="width:{audit.scores.utility}%"></span></div>
+  </div>
+  <div class="score-item">
+    <div class="score-item__label">工程质量</div>
+    <div class="score-item__value">{audit.scores.engineering}</div>
+    <div class="score-bar"><span style="width:{audit.scores.engineering}%"></span></div>
+  </div>
+  <div class="score-item">
+    <div class="score-item__label">社区健康度</div>
+    <div class="score-item__value">{audit.scores.health}</div>
+    <div class="score-bar"><span style="width:{audit.scores.health}%"></span></div>
+  </div>
+</div>
 
-## 项目链接
+**RepoIntel 总分：{audit.total_score}**
 
-[{audit.repo_name}]({audit.repo_link})
+</div>
 """
         path.write_text(body, encoding="utf-8")
         return path

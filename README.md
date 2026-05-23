@@ -15,7 +15,7 @@ Layer 1 · 硬指标过滤（Star/Fork、语言纯度、近期提交、去重）
        ↓
 Layer 2 · 低成本 LLM 粗筛（~30 → 15）
        ↓
-Layer 3 · 顶级 LLM 深度审计（CTO 视角四维打分 + 毒舌简评）
+Layer 3 · 浅克隆读码 + 顶级 LLM 深度审计（基于真实源码的 CTO Code Review）
        ↓
 Content Gen · Hugo Markdown + 微信文本 + R2 状态缓存
        ↓
@@ -127,8 +127,15 @@ python -m repointel
 | `REPOINTEL_SCORE_THRESHOLD` | `75` | 最低发布分数 |
 | `REPOINTEL_CACHE_TTL_DAYS` | `14` | 去重缓存 TTL（天） |
 | `REPOINTEL_MIN_FORK_STAR_RATIO` | `0.01` | 最低 Fork/Star 比 |
-| `REPOINTEL_MIN_STARS` | `50` | 最低 Star 数 |
+| `REPOINTEL_MIN_STARS` | `300` | 近 30 天新仓库最低 Star |
+| `REPOINTEL_MIN_STARS_WEEK` | `100` | 近 7 天新仓库最低 Star |
+| `REPOINTEL_MAX_REPO_AGE_DAYS` | `30` | 仓库最大创建天数（超龄拒绝） |
 | `REPOINTEL_RECENT_PUSH_HOURS` | `48` | 近期推送窗口（小时） |
+| `REPOINTEL_CODE_SOURCE` | `auto` | 源码获取：`auto` / `git` / `api` |
+| `REPOINTEL_MAX_CODE_FILES` | `48` | 每个仓库最多审读文件数 |
+| `REPOINTEL_MAX_FILE_BYTES` | `48000` | 单文件最大字节 |
+| `REPOINTEL_MAX_TOTAL_CODE_CHARS` | `600000` | 单仓库源码总字符上限 |
+| `REPOINTEL_MIN_CODE_FILES` | `5` | 深度审计最少读码文件数 |
 
 ## 评分公式
 
@@ -136,7 +143,8 @@ python -m repointel
 Score = 0.30 × 创新度 + 0.30 × 实用性 + 0.25 × 工程质量 + 0.15 × 社区健康度
 ```
 
-LLM 输出的各维度分数由 Python 本地重算总分，防止模型自行虚报 `total_score`。
+LLM 输出的各维度分数由 Python 本地重算总分，防止模型自行虚报 `total_score`。  
+Prompt 标准与事后校准逻辑见 `src/repointel/prompts.py` 与 `src/repointel/scoring.py`。
 
 ## GitHub Actions 部署
 

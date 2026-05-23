@@ -1,14 +1,31 @@
 {{ define "main" }}
-  {{ range .Pages.ByDate.Reverse }}
-    <article>
-      <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
-      <p class="meta">{{ .Date.Format "2006-01-02" }} · Score: <span class="score">{{ .Params.intel_score }}</span></p>
-      <p>{{ .Params.summary }}</p>
-      <p>
-        {{ range .Params.tags }}<a href="{{ (printf "tags/%s" .) | urlize | relURL }}">#{{ . }}</a> {{ end }}
-      </p>
-    </article>
-  {{ else }}
-    <p>暂无情报。Pipeline 运行后会自动生成内容。</p>
-  {{ end }}
+  <section class="hero">
+    <h2>{{ .Title }}</h2>
+    <p>分类归档 · {{ len .Pages }} 篇情报</p>
+  </section>
+
+  <div class="intel-grid">
+    {{ range .Pages.ByDate.Reverse }}
+      {{ $score := .Params.intel_score }}
+      {{ $badge := "score-badge" }}
+      {{ if ge $score 90.0 }}{{ $badge = "score-badge score-badge--elite" }}{{ else if ge $score 85.0 }}{{ $badge = "score-badge score-badge--strong" }}{{ else if ge $score 80.0 }}{{ $badge = "score-badge score-badge--good" }}{{ end }}
+      <article class="intel-card">
+        <div class="intel-card__top">
+          <h3 class="repo-title">
+            <a href="{{ .RelPermalink }}">{{ with .Params.repo_name }}{{ . }}{{ else }}{{ .Title }}{{ end }}</a>
+          </h3>
+          <span class="{{ $badge }}">{{ $score }}</span>
+        </div>
+        <div class="meta-row"><span>{{ .Date.Format "2006-01-02" }}</span></div>
+        <p class="summary">{{ .Params.summary }}</p>
+        {{ with .Params.tags }}
+          <div class="tag-row">
+            {{ range first 4 . }}<span class="tag">#{{ . }}</span>{{ end }}
+          </div>
+        {{ end }}
+      </article>
+    {{ else }}
+      <div class="empty-state">暂无内容。</div>
+    {{ end }}
+  </div>
 {{ end }}

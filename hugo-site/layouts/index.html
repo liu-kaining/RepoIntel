@@ -1,12 +1,39 @@
 {{ define "main" }}
-  <h2>每日开源情报</h2>
-  {{ range first 30 .Site.RegularPages.ByDate.Reverse }}
-    <article>
-      <h3><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
-      <p class="meta">{{ .Date.Format "2006-01-02" }} · Score: <span class="score">{{ .Params.intel_score }}</span></p>
-      <p>{{ .Params.summary }}</p>
-    </article>
-  {{ else }}
-    <p>暂无情报。Pipeline 运行后会自动生成内容。</p>
-  {{ end }}
+  <section class="hero">
+    <h2>每日开源风向标</h2>
+    <p>只收录近 30 天内新起、Star 破百/破三百、经过 AI 硬核审计的高净值项目。拒绝 linux/kubernetes 式的怀旧榜单，只看最新风向。</p>
+    <div class="hero-badges">
+      <span class="hero-badge hero-badge--live">Fresh · 30d</span>
+      <span class="hero-badge">AI Audit</span>
+      <span class="hero-badge">Hard Metrics</span>
+    </div>
+  </section>
+
+  <div class="intel-grid">
+    {{ range first 30 .Site.RegularPages.ByDate.Reverse }}
+      {{ $score := .Params.intel_score }}
+      {{ $badge := "score-badge" }}
+      {{ if ge $score 90.0 }}{{ $badge = "score-badge score-badge--elite" }}{{ else if ge $score 85.0 }}{{ $badge = "score-badge score-badge--strong" }}{{ else if ge $score 80.0 }}{{ $badge = "score-badge score-badge--good" }}{{ end }}
+      <article class="intel-card">
+        <div class="intel-card__top">
+          <h3 class="repo-title">
+            <a href="{{ .RelPermalink }}">{{ with .Params.repo_name }}{{ . }}{{ else }}{{ .Title }}{{ end }}</a>
+          </h3>
+          <span class="{{ $badge }}">{{ $score }}</span>
+        </div>
+        <div class="meta-row">
+          <span>{{ .Date.Format "2006-01-02" }}</span>
+          {{ with index .Params.categories 0 }}<span>{{ . }}</span>{{ end }}
+        </div>
+        <p class="summary">{{ .Params.summary }}</p>
+        {{ with .Params.tags }}
+          <div class="tag-row">
+            {{ range first 4 . }}<span class="tag">#{{ . }}</span>{{ end }}
+          </div>
+        {{ end }}
+      </article>
+    {{ else }}
+      <div class="empty-state">暂无情报。Pipeline 运行后会自动生成最新项目审计。</div>
+    {{ end }}
+  </div>
 {{ end }}

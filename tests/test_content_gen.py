@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from conftest import CODE_SETTINGS_KWARGS
 from repointel.config import Settings
 from repointel.content_gen import ContentGenerator
 from repointel.models import RepoAudit, Scores
@@ -30,9 +31,12 @@ def test_content_generator_filters_and_writes(tmp_path) -> None:
         score_threshold=75,
         cache_ttl_days=14,
         min_fork_star_ratio=0.01,
-        min_stars=50,
+        min_stars=300,
+        min_stars_week=100,
+        max_repo_age_days=30,
         require_recent_push_hours=48,
         dry_run=False,
+        **CODE_SETTINGS_KWARGS,
     )
     audit = RepoAudit(
         repo_name="owner/repo",
@@ -45,6 +49,9 @@ def test_content_generator_filters_and_writes(tmp_path) -> None:
         technical_review="Review.",
         commercial_value="Value.",
         hidden_risks=["Risk."],
+        code_files_reviewed=("src/main.rs", "Cargo.toml"),
+        code_source="git",
+        code_chars_analyzed=12_000,
     )
     published = ContentGenerator(settings).publish([audit], now=datetime(2026, 5, 23, tzinfo=UTC))
     assert len(published) == 1

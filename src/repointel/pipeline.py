@@ -18,7 +18,7 @@ class RepoIntelPipeline:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.github = GitHubClient(settings)
-        self.ai = AIEngine(settings)
+        self.ai = AIEngine(settings, self.github)
         self.content = ContentGenerator(settings)
         self.state_store = build_state_store(settings)
 
@@ -39,6 +39,7 @@ class RepoIntelPipeline:
         eligible = HardMetricFilter(self.settings, state).accepted(enriched)
         LOGGER.info("Hard metric filter accepted %d/%d repos", len(eligible), len(enriched))
 
+        LOGGER.info("Layer 3 will shallow-clone and read source for up to %d finalists", self.settings.rough_screen_limit)
         audits = self.ai.analyze_repos(eligible)
         published = self.content.publish(audits, now=now)
         LOGGER.info("Published %d RepoIntel entries", len(published))

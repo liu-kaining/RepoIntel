@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from conftest import CODE_SETTINGS_KWARGS
 from repointel.config import Settings
 from repointel.github_client import HardMetricFilter
 from repointel.models import RepoAudit, RepoCandidate, Scores
@@ -31,9 +32,12 @@ def _settings(tmp_path) -> Settings:
         score_threshold=75,
         cache_ttl_days=14,
         min_fork_star_ratio=0.01,
-        min_stars=50,
+        min_stars=300,
+        min_stars_week=100,
+        max_repo_age_days=30,
         require_recent_push_hours=48,
         dry_run=False,
+        **CODE_SETTINGS_KWARGS,
     )
 
 
@@ -48,6 +52,7 @@ def _repo(**overrides) -> RepoCandidate:
         "open_issues_count": 5,
         "language": "Go",
         "topics": ["infra"],
+        "created_at": "2026-05-20T00:00:00Z",
         "pushed_at": "2026-05-23T00:00:00Z",
         "updated_at": "2026-05-23T00:00:00Z",
         "default_branch": "main",
@@ -76,6 +81,14 @@ def test_hard_filter_rejects_failed_enrichment(tmp_path) -> None:
     decision = HardMetricFilter(settings, {}).apply([repo])[0]
     assert not decision.accepted
     assert "failed to verify" in decision.reason
+
+
+def test_hard_filter_rejects_stale_repository(tmp_path) -> None:
+    settings = _settings(tmp_path)
+    repo = _repo(created_at="2024-01-01T00:00:00Z")
+    decision = HardMetricFilter(settings, {}).apply([repo])[0]
+    assert not decision.accepted
+    assert "fresh-signal" in decision.reason or "older than" in decision.reason
 
 
 def test_state_merge_prunes_old_records_and_adds_audits() -> None:

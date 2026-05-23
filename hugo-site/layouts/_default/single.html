@@ -1,8 +1,31 @@
 {{ define "main" }}
+  {{ $score := .Params.intel_score }}
   <article>
-    <h1>{{ .Title }}</h1>
-    <p class="meta">{{ .Date.Format "2006-01-02 15:04" }} · Score: <span class="score">{{ .Params.intel_score }}</span></p>
-    <p><a href="{{ .Params.repo_link }}" target="_blank" rel="noopener">GitHub Repository</a></p>
-    {{ .Content }}
+    <section class="article-hero">
+      <div class="article-hero__top">
+        <div>
+          <h1>{{ with .Params.repo_name }}{{ . }}{{ else }}{{ .Title }}{{ end }}</h1>
+          <div class="meta-row" style="margin-top:12px;">
+            <span>{{ .Date.Format "2006-01-02 15:04" }}</span>
+            {{ with index .Params.categories 0 }}<span>{{ . }}</span>{{ end }}
+          </div>
+        </div>
+        <div class="big-score">{{ $score }}</div>
+      </div>
+      <p class="summary" style="margin-top:16px;font-size:1.05rem;">{{ .Params.summary }}</p>
+      <div class="article-actions">
+        <a class="btn btn--primary" href="{{ .Params.repo_link }}" target="_blank" rel="noopener">查看 GitHub 仓库 →</a>
+        <a class="btn" href="{{ .Site.Params.github_url }}" target="_blank" rel="noopener">RepoIntel 源码</a>
+      </div>
+      {{ with .Params.tags }}
+        <div class="tag-row" style="margin-top:16px;">
+          {{ range . }}<span class="tag">#{{ . }}</span>{{ end }}
+        </div>
+      {{ end }}
+    </section>
+
+    <div class="article-body">
+      {{ .Content }}
+    </div>
   </article>
 {{ end }}

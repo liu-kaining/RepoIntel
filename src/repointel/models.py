@@ -16,6 +16,7 @@ class RepoCandidate:
     open_issues_count: int
     language: str | None
     topics: list[str]
+    created_at: datetime | None
     pushed_at: datetime | None
     updated_at: datetime | None
     default_branch: str
@@ -43,6 +44,7 @@ class RepoCandidate:
             open_issues_count=int(item.get("open_issues_count") or 0),
             language=item.get("language"),
             topics=list(item.get("topics") or []),
+            created_at=parse_github_datetime(item.get("created_at")),
             pushed_at=parse_github_datetime(item.get("pushed_at")),
             updated_at=parse_github_datetime(item.get("updated_at")),
             default_branch=item.get("default_branch") or "main",
@@ -88,6 +90,7 @@ class RepoCandidate:
             open_issues_count=self.open_issues_count,
             language=self.language,
             topics=self.topics,
+            created_at=self.created_at,
             pushed_at=self.pushed_at,
             updated_at=self.updated_at,
             default_branch=self.default_branch,
@@ -106,7 +109,19 @@ class RepoCandidate:
             ),
         )
 
+    @property
+    def repo_age_days(self) -> int | None:
+        if not self.created_at:
+            return None
+        delta = datetime.now(UTC) - self.created_at
+        return max(delta.days, 0)
+
     def to_llm_context(self) -> dict[str, Any]:
+        non_code_ratio = sum(
+            ratio
+            for lang, ratio in self.code_language_ratio.items()
+            if lang.lower() in {"markdown", "html"}
+        )
         return {
             "full_name": self.full_name,
             "url": self.html_url,
@@ -118,7 +133,12 @@ class RepoCandidate:
             "primary_language": self.primary_language,
             "topics": self.topics,
             "license": self.license_name,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "repo_age_days": self.repo_age_days,
             "pushed_at": self.pushed_at.isoformat() if self.pushed_at else None,
+            "recent_commit_count": self.recent_commit_count,
+            "readme_length": len(self.readme_excerpt.strip()),
+            "non_code_byte_ratio": round(non_code_ratio, 3) if non_code_ratio else None,
             "language_bytes": self.languages,
             "readme_excerpt": self.readme_excerpt[:6000],
         }
@@ -156,6 +176,54 @@ class Scores:
 
 
 @dataclass(frozen=True)
+class SourceFile:
+    path: str
+    content: str
+    size_bytes: int
+    category: str
+    truncated: bool = False
+
+
+@dataclass(frozen=True)
+class RepoCodeBundle:
+    repo_name: str
+    source: str
+    default_branch: str
+    tree_file_count: int
+    selected_paths: tuple[str, ...]
+    files: tuple[SourceFile, ...]
+    skipped: list[str]
+    gather_note: str
+
+    @property
+    def total_chars(self) -> int:
+        return sum(len(file.content) for file in self.files)
+
+    def to_llm_payload(self) -> dict[str, Any]:
+        return {
+            "gather": {
+                "source": self.source,
+                "branch": self.default_branch,
+                "tree_file_count": self.tree_file_count,
+                "files_included": len(self.files),
+                "total_chars": self.total_chars,
+                "note": self.gather_note,
+                "skipped": self.skipped[:20],
+            },
+            "files": [
+                {
+                    "path": file.path,
+                    "category": file.category,
+                    "truncated": file.truncated,
+                    "size_bytes": file.size_bytes,
+                    "content": file.content,
+                }
+                for file in self.files
+            ],
+        }
+
+
+@dataclass(frozen=True)
 class RepoAudit:
     repo_name: str
     repo_link: str
@@ -167,6 +235,9 @@ class RepoAudit:
     technical_review: str
     commercial_value: str
     hidden_risks: list[str]
+    code_files_reviewed: tuple[str, ...] = ()
+    code_source: str = ""
+    code_chars_analyzed: int = 0
 
     @property
     def total_score(self) -> float:
@@ -179,8 +250,12 @@ class RepoAudit:
             "categories": [self.category],
             "tags": self.tags,
             "intel_score": self.total_score,
+            "repo_name": self.repo_name,
             "repo_link": self.repo_link,
             "summary": self.summary,
+            "code_source": self.code_source,
+            "code_files_reviewed": list(self.code_files_reviewed),
+            "code_chars_analyzed": self.code_chars_analyzed,
         }
 
     def to_cache_record(self, audited_at: datetime) -> dict[str, Any]:

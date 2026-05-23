@@ -34,8 +34,16 @@ class Settings:
     cache_ttl_days: int
     min_fork_star_ratio: float
     min_stars: int
+    min_stars_week: int
+    max_repo_age_days: int
     require_recent_push_hours: int
     dry_run: bool
+    code_source: str
+    max_code_files: int
+    max_file_bytes: int
+    max_total_code_chars: int
+    min_code_files_for_audit: int
+    git_clone_timeout_seconds: int
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -67,9 +75,17 @@ class Settings:
             score_threshold=_env_float("REPOINTEL_SCORE_THRESHOLD", 75.0),
             cache_ttl_days=_env_int("REPOINTEL_CACHE_TTL_DAYS", 14),
             min_fork_star_ratio=_env_float("REPOINTEL_MIN_FORK_STAR_RATIO", 0.01),
-            min_stars=_env_int("REPOINTEL_MIN_STARS", 50),
+            min_stars=_env_int("REPOINTEL_MIN_STARS", 300),
+            min_stars_week=_env_int("REPOINTEL_MIN_STARS_WEEK", 100),
+            max_repo_age_days=_env_int("REPOINTEL_MAX_REPO_AGE_DAYS", 30),
             require_recent_push_hours=_env_int("REPOINTEL_RECENT_PUSH_HOURS", 48),
             dry_run=dry_run,
+            code_source=os.getenv("REPOINTEL_CODE_SOURCE", "auto").strip().lower(),
+            max_code_files=_env_int("REPOINTEL_MAX_CODE_FILES", 48),
+            max_file_bytes=_env_int("REPOINTEL_MAX_FILE_BYTES", 48_000),
+            max_total_code_chars=_env_int("REPOINTEL_MAX_TOTAL_CODE_CHARS", 600_000),
+            min_code_files_for_audit=_env_int("REPOINTEL_MIN_CODE_FILES", 5),
+            git_clone_timeout_seconds=_env_int("REPOINTEL_GIT_CLONE_TIMEOUT", 300),
         )
         settings.validate()
         settings.log_safe_summary()
@@ -114,6 +130,18 @@ class Settings:
             raise ConfigurationError("Cache TTL and recent push window must be positive.")
         if self.min_stars < 0 or self.min_fork_star_ratio < 0:
             raise ConfigurationError("Minimum star and fork/star thresholds cannot be negative.")
+        if self.min_stars_week < 0:
+            raise ConfigurationError("REPOINTEL_MIN_STARS_WEEK cannot be negative.")
+        if self.max_repo_age_days <= 0:
+            raise ConfigurationError("REPOINTEL_MAX_REPO_AGE_DAYS must be positive.")
+        if self.code_source not in {"auto", "git", "api"}:
+            raise ConfigurationError("REPOINTEL_CODE_SOURCE must be auto, git, or api.")
+        if self.max_code_files <= 0 or self.min_code_files_for_audit <= 0:
+            raise ConfigurationError("Code file limits must be positive.")
+        if self.min_code_files_for_audit > self.max_code_files:
+            raise ConfigurationError("REPOINTEL_MIN_CODE_FILES cannot exceed REPOINTEL_MAX_CODE_FILES.")
+        if self.max_file_bytes <= 0 or self.max_total_code_chars <= 0:
+            raise ConfigurationError("Code size budgets must be positive.")
 
     def log_safe_summary(self) -> None:
         def _mask(value: str | None) -> str:
@@ -127,7 +155,8 @@ class Settings:
             "RepoIntel config loaded: dry_run=%s, provider=%s, model=%s, rough_model=%s, "
             "github_token=%s, state_backend=%s, r2_endpoint=%s, r2_bucket=%s, r2_key=%s, "
             "max_candidates=%d, rough_limit=%d, final_limit=%d, score_threshold=%s, "
-            "min_stars=%d, min_fork_star_ratio=%s, recent_push_hours=%d, cache_ttl_days=%d",
+            "min_stars=%d, min_stars_week=%d, min_fork_star_ratio=%s, max_repo_age_days=%d, "
+            "recent_push_hours=%d, cache_ttl_days=%d",
             self.dry_run,
             self.llm_provider,
             self.llm_model or "<empty>",
@@ -142,7 +171,9 @@ class Settings:
             self.final_publish_limit,
             self.score_threshold,
             self.min_stars,
+            self.min_stars_week,
             self.min_fork_star_ratio,
+            self.max_repo_age_days,
             self.require_recent_push_hours,
             self.cache_ttl_days,
         )
