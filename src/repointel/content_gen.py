@@ -14,10 +14,18 @@ from .models import RepoAudit
 
 LOGGER = logging.getLogger(__name__)
 
-_PATH_RE = re.compile(
-    r"\b((?:[\w.-]+/)+[\w.-]+\.(?:rs|py|go|ts|tsx|js|java|toml|yaml|yml|md|json))\b"
+_FILE_EXTENSIONS = r"(?:rs|py|go|ts|tsx|js|java|toml|yaml|yml|md|json|mod)"
+_AUDIT_HEADER_RE = re.compile(
+    r"(?:^|\n)\s*(?:【|\*\*)?"
+    r"(架构与核心链路|亮点\s*\d*|亮点|疑点\s*\d*|疑点|雷点\s*\d*|雷点|疑点/雷点|落地建议|不足与限制)"
+    r"(?:\*\*|】)?\s*[：:]\s*",
+    re.IGNORECASE,
 )
-_INLINE_CODE_RE = re.compile(r"`([^`]+)`")
+_CODE_REF_RE = re.compile(
+    rf"`([^`]+)`"
+    rf"|((?:[\w.-]+/)+[\w.-]+\.{_FILE_EXTENSIONS}|cmd/[\w./-]+\.{_FILE_EXTENSIONS})"
+    rf"(?:\s*[:：]\s*(\d+))?",
+)
 
 
 class ContentGenerator:
@@ -227,25 +235,84 @@ def _format_prose(text: str, *, rich: bool = False) -> str:
     cleaned = text.strip()
     if not cleaned:
         return "<p>暂无内容。</p>"
+    if rich:
+        return _format_audit_prose(cleaned)
     chunks = [part.strip() for part in re.split(r"\n\s*\n", cleaned) if part.strip()]
     if not chunks:
         chunks = [cleaned]
+    return "\n".join(f"<p>{_inline_code(html.escape(chunk))}</p>" for chunk in chunks if chunk)
+
+
+def _format_audit_prose(text: str) -> str:
+    sections = _split_audit_sections(text)
     parts: list[str] = []
-    for chunk in chunks:
-        css = ""
-        if rich:
-            if re.match(r"^(亮点|Highlight)", chunk):
-                css = "audit-callout audit-callout--highlight"
-            elif re.match(r"^(疑点|Doubt|风险)", chunk):
-                css = "audit-callout audit-callout--doubt"
-        escaped = html.escape(chunk)
-        parts.append(f'<p class="{css}">{_inline_code(escaped)}</p>')
-    return "\n".join(parts)
+    for kind, body in sections:
+        if not body:
+            continue
+        css = _callout_class(kind)
+        escaped = html.escape(body)
+        inner = _inline_code(escaped)
+        if css:
+            parts.append(f'<p class="{css}">{inner}</p>')
+        else:
+            parts.append(f"<p>{inner}</p>")
+    return "\n".join(parts) if parts else "<p>暂无内容。</p>"
+
+
+def _split_audit_sections(text: str) -> list[tuple[str, str]]:
+    matches = list(_AUDIT_HEADER_RE.finditer(text))
+    if not matches:
+        return [("default", text)]
+
+    sections: list[tuple[str, str]] = []
+    cursor = 0
+    for index, match in enumerate(matches):
+        if match.start() > cursor:
+            preamble = text[cursor : match.start()].strip()
+            if preamble:
+                kind = "intro" if index == 0 else "default"
+                sections.append((kind, preamble))
+        label = match.group(1)
+        body_start = match.end()
+        body_end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        body = text[body_start:body_end].strip()
+        if body:
+            sections.append((_section_kind(label), body))
+        cursor = body_end
+    return sections or [("default", text)]
+
+
+def _section_kind(label: str) -> str:
+    normalized = re.sub(r"\s+", "", label.lower())
+    if normalized.startswith("亮点") or normalized.startswith("highlight"):
+        return "highlight"
+    if any(normalized.startswith(prefix) for prefix in ("疑点", "雷点", "doubt", "风险")):
+        return "doubt"
+    if normalized.startswith("架构"):
+        return "intro"
+    return "default"
+
+
+def _callout_class(kind: str) -> str:
+    if kind == "highlight":
+        return "audit-callout audit-callout--highlight"
+    if kind == "doubt":
+        return "audit-callout audit-callout--doubt"
+    if kind == "intro":
+        return "audit-callout audit-callout--intro"
+    return ""
 
 
 def _inline_code(text: str) -> str:
-    text = _INLINE_CODE_RE.sub(r"<code>\1</code>", text)
-    return _PATH_RE.sub(r"<code>\1</code>", text)
+    def repl(match: re.Match[str]) -> str:
+        if match.group(1):
+            return f'<code class="code-ref">{match.group(1)}</code>'
+        path = match.group(2)
+        line = match.group(3)
+        label = path if not line else f"{path}:{line}"
+        return f'<code class="code-ref">{label}</code>'
+
+    return _CODE_REF_RE.sub(repl, text)
 
 
 def _slugify(value: str) -> str:

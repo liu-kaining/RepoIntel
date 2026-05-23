@@ -86,13 +86,13 @@ a:hover { color: #67e8f9; }
 
 .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .brand-mark {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
   display: grid;
   place-items: center;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   letter-spacing: -0.04em;
   color: #041016;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -101,9 +101,10 @@ a:hover { color: #67e8f9; }
 }
 .brand-title {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.42rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 .brand-title a { color: var(--text); }
 .brand-title a:hover { color: var(--accent); }
@@ -119,9 +120,11 @@ a:hover { color: #67e8f9; }
   border: 0;
 }
 .brand-copy p {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   color: var(--text-muted);
-  font-size: 0.88rem;
+  font-size: 0.96rem;
+  line-height: 1.45;
+  max-width: 42ch;
 }
 
 .header-actions {
@@ -509,8 +512,8 @@ a:hover { color: #67e8f9; }
 .prose p {
   margin: 0 0 14px;
   color: var(--text-muted);
-  font-size: 0.98rem;
-  line-height: 1.75;
+  font-size: 1.02rem;
+  line-height: 1.8;
 }
 .prose p:last-child { margin-bottom: 0; }
 .prose strong {
@@ -519,15 +522,24 @@ a:hover { color: #67e8f9; }
 }
 .prose code,
 .panel-body code,
-.path-chip {
+.path-chip,
+.code-ref {
   font-family: var(--mono);
-  font-size: 0.84em;
-  padding: 0.12em 0.45em;
+  font-size: 0.9em;
+  padding: 0.18em 0.5em;
   border-radius: 6px;
   color: #a5f3fc;
-  background: rgba(34, 211, 238, 0.1);
-  border: 1px solid rgba(34, 211, 238, 0.18);
-  word-break: break-all;
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  word-break: keep-all;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: baseline;
+}
+.content-panel--audit .panel-body {
+  overflow-x: auto;
 }
 
 .scope-stats {
@@ -600,6 +612,10 @@ a:hover { color: #67e8f9; }
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
 }
+.audit-callout--intro {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.06);
+}
 .audit-callout--highlight {
   border-color: rgba(52, 211, 153, 0.35);
   background: rgba(52, 211, 153, 0.06);
@@ -607,6 +623,28 @@ a:hover { color: #67e8f9; }
 .audit-callout--doubt {
   border-color: rgba(251, 113, 133, 0.35);
   background: rgba(251, 113, 133, 0.06);
+}
+/* 旧版 Markdown 文章（## 标题）兜底样式 */
+.panel-body > h2,
+.panel-body > h3 {
+  margin: 18px 0 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+}
+.panel-body > h2:first-child,
+.panel-body > h3:first-child {
+  margin-top: 0;
+}
+.panel-body > p,
+.panel-body > ul {
+  color: var(--text-muted);
+  font-size: 1.02rem;
+  line-height: 1.8;
+}
+.panel-body > ul {
+  padding-left: 1.2rem;
 }
 
 .risk-list {

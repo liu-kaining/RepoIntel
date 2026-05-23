@@ -57,3 +57,24 @@ def test_content_generator_filters_and_writes(tmp_path) -> None:
     assert len(published) == 1
     assert (tmp_path / "content" / "2026-05-23-owner-repo.md").exists()
     assert "owner/repo" in (tmp_path / "output" / "wechat_digest.txt").read_text(encoding="utf-8")
+
+    post = (tmp_path / "content" / "2026-05-23-owner-repo.md").read_text(encoding="utf-8")
+    assert "path-chip" in post
+    assert "content-panel--audit" in post
+
+
+def test_audit_prose_splits_sections_and_paths() -> None:
+    from repointel.content_gen import _format_audit_prose
+
+    text = (
+        "架构与核心链路：入口在 cmd/bumblebee/main.go。\n"
+        "亮点1：`internal/walk/walk.go` 设计清晰。\n"
+        "疑点1：internal/walk/dirkey_unix.go :10 可能有问题。\n"
+        "落地建议：先跑 baseline。"
+    )
+    rendered = _format_audit_prose(text)
+    assert "audit-callout--intro" in rendered
+    assert "audit-callout--highlight" in rendered
+    assert "audit-callout--doubt" in rendered
+    assert "dirkey_unix.go:10" in rendered
+    assert "internal/wa</code>" not in rendered
