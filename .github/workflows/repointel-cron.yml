@@ -1,0 +1,83 @@
+name: RepoIntel Daily Pipeline
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: repointel-daily
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -e '.[dev]'
+
+      - name: Lint and test
+        run: |
+          python -m ruff check src tests
+          python -m pytest
+
+      - name: Run RepoIntel pipeline
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          ROUGH_LLM_MODEL: ${{ secrets.ROUGH_LLM_MODEL }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: python -m repointel
+
+      - name: Upload WeChat digest artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wechat-digest-${{ github.run_id }}
+          path: output/wechat_digest.txt
+          if-no-files-found: ignore
+
+      - name: Set up Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: "latest"
+          extended: true
+
+      - name: Build Hugo site
+        working-directory: hugo-site
+        run: hugo --minify
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Generate Pagefind index
+        working-directory: hugo-site
+        run: npx pagefind --site public
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./hugo-site/public
+          publish_branch: gh-pages

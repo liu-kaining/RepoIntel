@@ -1,0 +1,18 @@
+baseURL = "https://example.com/"
+languageCode = "zh-cn"
+title = "RepoIntel 开源情报局"
+enableRobotsTXT = true
+summaryLength = 120
+
+[outputs]
+home = ["HTML", "RSS"]
+section = ["HTML", "RSS"]
+taxonomy = ["HTML", "RSS"]
+term = ["HTML", "RSS"]
+
+[taxonomies]
+tag = "tags"
+category = "categories"
+
+[params]
+description = "基于 AI 与硬核指标审计的开源米其林指南"

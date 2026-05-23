@@ -206,6 +206,15 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
+# RepoIntel generated artifacts
+output/
+hugo-site/content/posts/*
+!hugo-site/content/posts/.gitkeep
+hugo-site/public/
+hugo-site/resources/
+hugo-site/.hugo_build.lock
+node_modules/
+
 # PyPI configuration file
 .pypirc
 

@@ -1,0 +1,12 @@
+{{ define "main" }}
+  <h2>每日开源情报</h2>
+  {{ range first 30 .Site.RegularPages.ByDate.Reverse }}
+    <article>
+      <h3><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
+      <p class="meta">{{ .Date.Format "2006-01-02" }} · Score: <span class="score">{{ .Params.intel_score }}</span></p>
+      <p>{{ .Params.summary }}</p>
+    </article>
+  {{ else }}
+    <p>暂无情报。Pipeline 运行后会自动生成内容。</p>
+  {{ end }}
+{{ end }}
