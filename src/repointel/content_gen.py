@@ -177,7 +177,9 @@ def _path_list(files: tuple[str, ...]) -> str:
     if not files:
         return '<p class="path-empty">本次未采集到有效源码路径。</p>'
     visible = list(files[:14])
-    items = "".join(f'<li><code class="path-chip">{html.escape(path)}</code></li>' for path in visible)
+    items = "".join(
+        f'<li><code class="path-chip">{html.escape(path)}</code></li>' for path in visible
+    )
     extra = ""
     if len(files) > len(visible):
         extra = f'<li class="path-more">另有 {len(files) - len(visible)} 个文件未展示</li>'
