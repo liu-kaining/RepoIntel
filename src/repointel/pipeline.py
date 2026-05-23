@@ -57,8 +57,18 @@ class RepoIntelPipeline:
             len(audits),
             len(state),
         )
-        self.state_store.save(updated_state)
-        LOGGER.info("Saved %d processed repo records", len(updated_state))
+        try:
+            self.state_store.save(updated_state)
+            LOGGER.info("Saved %d processed repo records", len(updated_state))
+        except RepoIntelError as exc:
+            # State persistence is best-effort caching. Content is already
+            # generated and uploaded as an artifact. A save failure means the
+            # next run will re-audit the same repos, but today's output is safe.
+            LOGGER.warning(
+                "State persistence failed (non-fatal): %s. "
+                "Content was generated successfully; next run will re-audit.",
+                exc,
+            )
         return 0
 
 
