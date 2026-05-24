@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -46,6 +48,23 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
         run: python -m repointel
+
+      - name: Commit and push new Hugo posts to main
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add hugo-site/content/posts/
+          if git diff --cached --quiet; then
+            echo "No new intelligence posts today; keeping existing main branch content."
+          else
+            git commit -m "$(cat <<'EOF'
+chore: daily intel posts update [skip ci]
+
+Automated Hugo posts from RepoIntel pipeline.
+EOF
+)"
+            git push origin "HEAD:${{ github.ref_name }}"
+          fi
 
       - name: Upload WeChat digest artifact
         if: always()

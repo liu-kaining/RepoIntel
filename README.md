@@ -152,9 +152,10 @@ Prompt 标准与事后校准逻辑见 `src/repointel/prompts.py` 与 `src/repoin
 
 1. Ruff lint + format check + 单元测试
 2. 运行 RepoIntel 流水线
-3. 上传 `wechat_digest.txt` 为 Artifact
-4. Hugo 构建 + Pagefind 全文索引
-5. 部署到 `gh-pages` 分支
+3. 将新生成的 `hugo-site/content/posts/*.md` commit 并 push 回 `main`（历史情报沉淀在仓库里，避免 CI 无状态导致站点被洗白）
+4. 上传 `wechat_digest.txt` 为 Artifact
+5. Hugo 全量编译（含 main 上已有 + 今日新增 posts）+ Pagefind 全文索引
+6. 部署到 `gh-pages` 分支
 
 ### 所需 Secrets
 

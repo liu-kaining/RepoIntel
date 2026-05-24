@@ -206,10 +206,8 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
-# RepoIntel generated artifacts
+# RepoIntel generated artifacts (posts are tracked in git for Hugo history)
 output/
-hugo-site/content/posts/*
-!hugo-site/content/posts/.gitkeep
 hugo-site/public/
 hugo-site/resources/
 hugo-site/.hugo_build.lock
