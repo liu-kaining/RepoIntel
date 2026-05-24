@@ -148,7 +148,7 @@ Prompt 标准与事后校准逻辑见 `src/repointel/prompts.py` 与 `src/repoin
 
 ## GitHub Actions 部署
 
-工作流 [`.github/workflows/repointel-cron.yml`](.github/workflows/repointel-cron.yml) 每日 UTC 00:00 自动运行（支持 `workflow_dispatch` 手动触发）：
+工作流 [`.github/workflows/repointel-cron.yml`](.github/workflows/repointel-cron.yml) 每 3 小时自动运行一次（UTC 整点 0/3/6/9…，支持 `workflow_dispatch` 手动触发）：
 
 1. Ruff lint + format check + 单元测试
 2. 运行 RepoIntel 流水线
