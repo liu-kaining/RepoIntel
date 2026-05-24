@@ -57,12 +57,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No new intelligence posts today; keeping existing main branch content."
           else
-            git commit -m "$(cat <<'EOF'
-chore: daily intel posts update [skip ci]
-
-Automated Hugo posts from RepoIntel pipeline.
-EOF
-)"
+            git commit -m "chore: daily intel posts update [skip ci]"
             git push origin "HEAD:${{ github.ref_name }}"
           fi
 
