@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from conftest import CODE_SETTINGS_KWARGS
 from repointel.config import Settings
@@ -42,6 +42,9 @@ def _settings(tmp_path) -> Settings:
 
 
 def _repo(**overrides) -> RepoCandidate:
+    now = datetime.now(UTC)
+    created_at = (now - timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    pushed_at = (now - timedelta(hours=6)).strftime("%Y-%m-%dT%H:%M:%SZ")
     item = {
         "full_name": "owner/repo",
         "html_url": "https://github.com/owner/repo",
@@ -52,9 +55,9 @@ def _repo(**overrides) -> RepoCandidate:
         "open_issues_count": 5,
         "language": "Go",
         "topics": ["infra"],
-        "created_at": "2026-05-20T00:00:00Z",
-        "pushed_at": "2026-05-23T00:00:00Z",
-        "updated_at": "2026-05-23T00:00:00Z",
+        "created_at": created_at,
+        "pushed_at": pushed_at,
+        "updated_at": pushed_at,
         "default_branch": "main",
         "archived": False,
         "disabled": False,

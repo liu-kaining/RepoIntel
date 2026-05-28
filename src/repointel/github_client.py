@@ -502,14 +502,14 @@ class HardMetricFilter:
             return FilterDecision(repo, False, "fork/star ratio below trust threshold")
         if repo.primary_language.lower() in NON_CODE_PRIMARY_LANGUAGES:
             return FilterDecision(repo, False, "primary language is non-code content")
+        if repo.enrichment_failed:
+            return FilterDecision(repo, False, "failed to verify repository activity signals")
         if repo.pushed_at and repo.pushed_at < cutoff_datetime(
             self.settings.require_recent_push_hours
         ):
             return FilterDecision(repo, False, "no recent push activity")
         if repo.recent_commit_count is not None and repo.recent_commit_count <= 0:
             return FilterDecision(repo, False, "no recent commits")
-        if repo.enrichment_failed:
-            return FilterDecision(repo, False, "failed to verify repository activity signals")
         if self._non_code_language_ratio(repo) > 0.80:
             return FilterDecision(repo, False, "Markdown/HTML dominates repository bytes")
         return FilterDecision(repo, True, "accepted")
