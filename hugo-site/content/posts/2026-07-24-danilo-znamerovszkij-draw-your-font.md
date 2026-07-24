@@ -1,0 +1,145 @@
+---
+title: '[Score: 78.95] danilo-znamerovszkij/draw-your-font'
+date: '2026-07-24T19:20:29Z'
+categories:
+- Font Generation & Computer Vision
+tags:
+- handwriting
+- font
+- potrace
+- computer-vision
+- cli
+- ai-assistant
+intel_score: 78.95
+repo_name: danilo-znamerovszkij/draw-your-font
+repo_link: https://github.com/danilo-znamerovszkij/draw-your-font
+summary: 将手写照片转化为可安装字体的本地 Node CLI 与 Claude Code 技能，支持 TTF/WOFF2 输出和 AI 辅助标签，完全离线运行。
+code_source: git
+code_files_reviewed:
+- package.json
+- .github/workflows/pages.yml
+- src/index.js
+- src/charsets.js
+- src/trace.js
+- src/assemble.js
+- src/template.js
+- src/capture.js
+- src/metrics.js
+- src/segment.js
+- src/preview.js
+- src/winding.js
+- src/blob-core.js
+- src/cli.js
+- skills/draw-your-font/scripts/resolve-cli.js
+- skills/draw-your-font/references/troubleshooting.md
+- README.md
+- test/e2e.js
+- skills/draw-your-font/SKILL.md
+- site/demo.src.js
+code_chars_analyzed: 67869
+---
+
+<section class="content-panel content-panel--scope" id="scope">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">⌁</span>
+  <h2 class="panel-title">审读源码范围</h2>
+</header>
+<div class="panel-body">
+  <div class="scope-stats">
+    <div class="scope-stat">
+      <span class="scope-stat__label">代码来源</span>
+      <span class="scope-stat__value">git</span>
+    </div>
+    <div class="scope-stat">
+      <span class="scope-stat__label">审读文件</span>
+      <span class="scope-stat__value">20 个</span>
+    </div>
+    <div class="scope-stat">
+      <span class="scope-stat__label">采样体量</span>
+      <span class="scope-stat__value">约 67,869 字符</span>
+    </div>
+  </div>
+  <p class="path-list-label">主要路径</p>
+  <ul class="path-list"><li><code class="path-chip">package.json</code></li><li><code class="path-chip">.github/workflows/pages.yml</code></li><li><code class="path-chip">src/index.js</code></li><li><code class="path-chip">src/charsets.js</code></li><li><code class="path-chip">src/trace.js</code></li><li><code class="path-chip">src/assemble.js</code></li><li><code class="path-chip">src/template.js</code></li><li><code class="path-chip">src/capture.js</code></li><li><code class="path-chip">src/metrics.js</code></li><li><code class="path-chip">src/segment.js</code></li><li><code class="path-chip">src/preview.js</code></li><li><code class="path-chip">src/winding.js</code></li><li><code class="path-chip">src/blob-core.js</code></li><li><code class="path-chip">src/cli.js</code></li><li class="path-more">另有 6 个文件未展示</li></ul>
+</div>
+</section>
+
+<section class="content-panel content-panel--pain" id="pain">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">◎</span>
+  <h2 class="panel-title">解决的工程痛点</h2>
+</header>
+<div class="panel-body prose">
+<p>设计师或普通用户想将手写字数字化用于网站、文档或品牌，现有在线服务按需付费且要求上传隐私照片，本地开源方案缺失一站式的字体生成管道。</p>
+</div>
+</section>
+
+<section class="content-panel content-panel--audit" id="audit">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">⚙</span>
+  <h2 class="panel-title">CTO 级技术审计</h2>
+</header>
+<div class="panel-body prose">
+<p class="audit-callout audit-callout--intro">照片经自适应阈值二值化（<code class="code-ref">src/capture.js</code>:binarize）生成 ink 遮罩，blob-core（<code class="code-ref">src/blob-core.js</code>:connectedComponents）提取连通分量，通过 mergeParts（<code class="code-ref">src/blob-core.js</code>）合并笔画片段并按阅读顺序排序，分割为独立裁剪图（<code class="code-ref">src/segment.js</code>:segment）。每个裁剪经 potrace 矢量化（<code class="code-ref">src/trace.js</code>:trace），再用统一 em‑square 度量放置（<code class="code-ref">src/metrics.js</code>:placeGlyph），最后组装 TTF（<code class="code-ref">src/assemble.js</code>:buildTTF）并可选转为 WOFF/WOFF2。CLI（<code class="code-ref">src/cli.js</code>）将上述步骤串联为 template/segment/build/make/preview 命令。</p>
+<p class="audit-callout audit-callout--highlight">mergeParts 采用多轮迭代与最近优先配对策略，每轮动态重算中位数高度，避免因噪声斑点拉低中位数而漏掉 i 点、冒号等小部件合并，且融合了横向笔画分离的字母（如 M、K）。代码在 <code class="code-ref">src/blob-core.js</code> 中实现了垂直堆叠、并列标记和断裂笔画的启发式合并。</p>
+<p class="audit-callout audit-callout--highlight">winding 修复（<code class="code-ref">src/winding.js</code>:fixWinding）解决了 potrace 输出统一方向导致的非零缠绕规则下字碗（如 b、o）被填充的问题。通过解析路径、构建多边形并计算面积和嵌套深度，对外廓和内孔重新定向，使得最终字体在主流渲染器中正确显示。e2e 测试（<code class="code-ref">test/e2e.js</code>）验证了 o 的字腔包含相反方向轮廓。</p>
+<p class="audit-callout audit-callout--doubt">winding.js 使用了 svgpath 的 unshort()、unarc()、iterate() 方法解析路径，但 potrace 只产生 M/L/C/Q 命令，unarc 为冗余调用；若未来 potrace 输出引入弧线，该解析链可能中断，且依赖内部 API 的稳定性。</p>
+<p class="audit-callout audit-callout--doubt">trace.js 每次 trace 都新建 Potrace 实例（<code class="code-ref">new Potrace(...)</code>）并异步加载图片，未对大量字形（如完整字符集）的场景做实例复用或并发控制，高并发下可能产生内存压力，但单次生成尚可接受。</p>
+<p>适合需要快速将手写稿转换为可商用字体的个人或小团队，结合 AI 技能可大幅降低手动标注门槛。建议用于展示性字体或短文本场景；若追求正文字体可读性，需额外的字距调整和微调（已规划在 v2）。</p>
+</div>
+</section>
+
+<section class="content-panel content-panel--risk" id="risk">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">⚠</span>
+  <h2 class="panel-title">隐藏风险与雷点</h2>
+</header>
+<div class="panel-body prose">
+<ul class="risk-list"><li>potrace 输出格式变化或路径解析依赖的 svgpath 内部 API 变更可能导致路径解析失败。</li><li>模板仅生成 A4 尺寸，对北美 Letter 纸张或非拉丁字符集支持有限；多字符序列（连字）尚未实现，复杂书写系统的适用性受限。</li><li>summary 过长，可能含废话</li><li>未引用 README 原文依据（缺「」或 README/文档 指称）</li></ul>
+</div>
+</section>
+
+<section class="content-panel content-panel--value" id="value">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">◈</span>
+  <h2 class="panel-title">生态与商业价值</h2>
+</header>
+<div class="panel-body prose">
+<p>弥补了手写字体创建领域的免费、离线、隐私保护工具空白，可为独立创作者、本地化项目提供零成本定制字体方案，潜在用户群包括社交媒体内容制作者、小型电商和手帐爱好者。</p>
+</div>
+</section>
+
+<section class="content-panel content-panel--scores" id="scores">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">▣</span>
+  <h2 class="panel-title">四维评分</h2>
+</header>
+<div class="panel-body">
+  <div class="score-grid">
+    <div class="score-item">
+  <div class="score-item__label">创新度</div>
+  <div class="score-item__value">78</div>
+  <div class="score-bar"><span style="width:78%"></span></div>
+</div>
+    <div class="score-item">
+  <div class="score-item__label">实用性</div>
+  <div class="score-item__value">82</div>
+  <div class="score-bar"><span style="width:82%"></span></div>
+</div>
+    <div class="score-item">
+  <div class="score-item__label">工程质量</div>
+  <div class="score-item__value">83</div>
+  <div class="score-bar"><span style="width:83%"></span></div>
+</div>
+    <div class="score-item">
+  <div class="score-item__label">社区健康度</div>
+  <div class="score-item__value">68</div>
+  <div class="score-bar"><span style="width:68%"></span></div>
+</div>
+  </div>
+  <div class="total-score-banner">
+    <span class="total-score-banner__label">RepoIntel 总分</span>
+    <span class="total-score-banner__value">78.95</span>
+  </div>
+</div>
+</section>
