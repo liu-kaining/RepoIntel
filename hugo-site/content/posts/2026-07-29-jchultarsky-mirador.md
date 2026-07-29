@@ -1,0 +1,164 @@
+---
+title: '[Score: 76.9] jchultarsky/mirador'
+date: '2026-07-29T14:03:04Z'
+categories:
+- Terminal Dashboard
+tags:
+- Rust
+- ratatui
+- TUI
+- productivity
+- system-monitor
+- dashboard
+intel_score: 76.9
+repo_name: jchultarsky/mirador
+repo_link: https://github.com/jchultarsky/mirador
+summary: 一个全终端个人仪表盘，整合了时钟、日历、天气、任务、笔记、股票和系统指标，设计围绕“全天开着一个标签瞥一眼”的使用场景。
+code_source: git
+code_files_reviewed:
+- Cargo.toml
+- .github/workflows/ci.yml
+- .github/workflows/release.yml
+- src/main.rs
+- src/widgets/mod.rs
+- src/config/mod.rs
+- src/samples.rs
+- src/poll.rs
+- src/selection.rs
+- src/dateinput.rs
+- src/watch.rs
+- src/picker.rs
+- src/store.rs
+- src/update.rs
+- src/note.rs
+- src/textfield.rs
+- src/panel.rs
+- src/arrange.rs
+- src/theme.rs
+- src/theme_picker.rs
+- src/feed.rs
+- src/migrate.rs
+- src/zones.rs
+- src/textarea.rs
+- src/frame.rs
+- src/chart.rs
+- src/glyphs.rs
+- src/state.rs
+- src/themes.rs
+- src/quote.rs
+- src/prompt.rs
+- src/task.rs
+- src/grid.rs
+- src/config/layout.rs
+- src/widgets/cpu.rs
+- src/widgets/watchlog.rs
+- src/widgets/network.rs
+- src/config/widgets.rs
+- src/widgets/news.rs
+code_chars_analyzed: 600070
+---
+
+<section class="content-panel content-panel--scope" id="scope">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">⌁</span>
+  <h2 class="panel-title">审读源码范围</h2>
+</header>
+<div class="panel-body">
+  <div class="scope-stats">
+    <div class="scope-stat">
+      <span class="scope-stat__label">代码来源</span>
+      <span class="scope-stat__value">git</span>
+    </div>
+    <div class="scope-stat">
+      <span class="scope-stat__label">审读文件</span>
+      <span class="scope-stat__value">39 个</span>
+    </div>
+    <div class="scope-stat">
+      <span class="scope-stat__label">采样体量</span>
+      <span class="scope-stat__value">约 600,070 字符</span>
+    </div>
+  </div>
+  <p class="path-list-label">主要路径</p>
+  <ul class="path-list"><li><code class="path-chip">Cargo.toml</code></li><li><code class="path-chip">.github/workflows/ci.yml</code></li><li><code class="path-chip">.github/workflows/release.yml</code></li><li><code class="path-chip">src/main.rs</code></li><li><code class="path-chip">src/widgets/mod.rs</code></li><li><code class="path-chip">src/config/mod.rs</code></li><li><code class="path-chip">src/samples.rs</code></li><li><code class="path-chip">src/poll.rs</code></li><li><code class="path-chip">src/selection.rs</code></li><li><code class="path-chip">src/dateinput.rs</code></li><li><code class="path-chip">src/watch.rs</code></li><li><code class="path-chip">src/picker.rs</code></li><li><code class="path-chip">src/store.rs</code></li><li><code class="path-chip">src/update.rs</code></li><li class="path-more">另有 25 个文件未展示</li></ul>
+</div>
+</section>
+
+<section class="content-panel content-panel--pain" id="pain">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">◎</span>
+  <h2 class="panel-title">解决的工程痛点</h2>
+</header>
+<div class="panel-body prose">
+<p>日常工作中，查看时间、待办、天气、系统状态需要在多个工具或标签间切换，传统仪表盘往往信息过载或闪烁干扰，而 mirador 提供安静、可定制的单一视口，减少上下文切换和认知负荷。</p>
+</div>
+</section>
+
+<section class="content-panel content-panel--audit" id="audit">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">⚙</span>
+  <h2 class="panel-title">CTO 级技术审计</h2>
+</header>
+<div class="panel-body prose">
+<p class="audit-callout audit-callout--intro">应用入口 <code class="code-ref">src/main.rs</code> 的 <code class="code-ref">run()</code> 解析参数、加载配置（<code class="code-ref">src/config/mod.rs:Config</code>），构建 <code class="code-ref">App</code>，并进入 <code class="code-ref">app.run(&amp;mut terminal)</code> 事件循环。每个面板实现 <code class="code-ref">src/panel.rs</code> 定义的 <code class="code-ref">Panel</code> trait，通过 <code class="code-ref">src/widgets/mod.rs</code> 的 <code class="code-ref">build()</code> 按名称注册，返回 <code class="code-ref">Box&lt;dyn Panel&gt;</code>。配置为 TOML，首次启动生成默认注释文件。数据存储（任务、笔记、列表等）使用 <code class="code-ref">src/store.rs</code> 的原子写入。</p>
+<p class="audit-callout audit-callout--highlight">*严苛的多尺寸渲染测试*。<code class="code-ref">src/widgets/mod.rs</code> 中的测试 <code class="code-ref">every_widget_renders_at_any_size_without_panicking</code> 对每个面板在 <code class="code-ref">(1,1)</code> 到 <code class="code-ref">(200,60)</code> 的极端终端尺寸下调用 <code class="code-ref">render</code>，验证无 panic，覆盖了退化场景。</p>
+<p class="audit-callout audit-callout--highlight">*原子写入保障数据安全*。<code class="code-ref">src/store.rs</code> 的 <code class="code-ref">write_atomic()</code> 通过写临时文件、<code class="code-ref">sync_all</code> 然后重命名替换原文件，避免中断导致数据丢失，并额外处理了 Unix 权限继承（<code class="code-ref">carry_permissions_across</code>）。</p>
+<p class="audit-callout audit-callout--doubt">*RSS 解析仅支持 RSS 2.0*。<code class="code-ref">src/feed.rs</code> 的解析器仅处理 <code class="code-ref">&lt;item&gt;</code> 内的 <code class="code-ref">&lt;title&gt;</code>、<code class="code-ref">&lt;link&gt;</code>、<code class="code-ref">&lt;pubDate&gt;</code>，忽略 Atom 等格式，虽然文档说明，但可能限制部分用户的新闻源。</p>
+<p class="audit-callout audit-callout--doubt">*股票数据源单一且脆弱*。<code class="code-ref">src/quote.rs</code> 的 <code class="code-ref">QuoteSource</code> trait 目前仅有 <code class="code-ref">YahooChart</code> 实现，而 Yahoo 对数据中心和 VPN IP 直接返回 429，虽设计了接口但缺少可选源，依赖风险较高。</p>
+<p>对终端工作流用户，尤其需同时关注时间、任务和系统状态的场景非常实用；建议关注网络依赖的稳定性，准备后备方案或允许用户提供 API key 切换到其他金融数据源。</p>
+</div>
+</section>
+
+<section class="content-panel content-panel--risk" id="risk">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">⚠</span>
+  <h2 class="panel-title">隐藏风险与雷点</h2>
+</header>
+<div class="panel-body prose">
+<ul class="risk-list"><li>AI 辅助生成可能引入隐晦的边界条件错误，虽然测试覆盖度高，但需长期观察实际使用中的稳定性。</li><li>依赖外部免费 API（天气、股票）无 SLA，服务中断或条款变更可能导致面板失效，且恢复时间不可控。</li></ul>
+</div>
+</section>
+
+<section class="content-panel content-panel--value" id="value">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">◈</span>
+  <h2 class="panel-title">生态与商业价值</h2>
+</header>
+<div class="panel-body prose">
+<p>作为开源终端工具，可吸引注重效率和终端环境的开发者，商业价值有限，但完善的文档和模块化设计有利于社区贡献和二次开发。</p>
+</div>
+</section>
+
+<section class="content-panel content-panel--scores" id="scores">
+<header class="panel-head">
+  <span class="panel-icon" aria-hidden="true">▣</span>
+  <h2 class="panel-title">四维评分</h2>
+</header>
+<div class="panel-body">
+  <div class="score-grid">
+    <div class="score-item">
+  <div class="score-item__label">创新度</div>
+  <div class="score-item__value">70</div>
+  <div class="score-bar"><span style="width:70%"></span></div>
+</div>
+    <div class="score-item">
+  <div class="score-item__label">实用性</div>
+  <div class="score-item__value">78</div>
+  <div class="score-bar"><span style="width:78%"></span></div>
+</div>
+    <div class="score-item">
+  <div class="score-item__label">工程质量</div>
+  <div class="score-item__value">88</div>
+  <div class="score-bar"><span style="width:88%"></span></div>
+</div>
+    <div class="score-item">
+  <div class="score-item__label">社区健康度</div>
+  <div class="score-item__value">70</div>
+  <div class="score-bar"><span style="width:70%"></span></div>
+</div>
+  </div>
+  <div class="total-score-banner">
+    <span class="total-score-banner__label">RepoIntel 总分</span>
+    <span class="total-score-banner__value">76.9</span>
+  </div>
+</div>
+</section>
